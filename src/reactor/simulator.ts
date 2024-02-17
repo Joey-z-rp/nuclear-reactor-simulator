@@ -75,11 +75,19 @@ class Simulator {
     this.rodController = new RodController({ dtStep: this.settings.dtStep });
   }
 
+  getDataPoints() {
+    return this.dataPoints;
+  }
+
   getSettings() {
     return this.settings;
   }
 
-  getReactivities() {
+  getRawReactivities() {
+    return this.rawReactivities;
+  }
+
+  getNetReactivities() {
     return this.netReactivities;
   }
 
@@ -122,7 +130,15 @@ class Simulator {
   }
 
   getCurrentIndex() {
-    return (this.iterations % this.dataPoints) - 1;
+    if (this.iterations === 0) return 0;
+    if (this.iterations % this.dataPoints !== 0)
+      return (this.iterations % this.dataPoints) - 1;
+    return this.dataPoints - 1;
+  }
+
+  getNextIndex() {
+    const currentIndex = this.getCurrentIndex();
+    return currentIndex === this.dataPoints - 1 ? 0 : currentIndex + 1;
   }
 
   getPower(index: number) {
@@ -222,7 +238,7 @@ class Simulator {
 
   calculateStateVector() {
     const currentIndex = this.getCurrentIndex();
-    const nextIndex = currentIndex + 1;
+    const nextIndex = this.getNextIndex();
     const reactivity = this.netReactivities[nextIndex] * 1e-5;
 
     const calculateNeutronChange = (
@@ -331,7 +347,7 @@ class Simulator {
   simulate(iterations: number) {
     for (let i = 0; i < iterations; i++) {
       const currentIndex = this.getCurrentIndex();
-      const nextIndex = currentIndex + 1;
+      const nextIndex = this.getNextIndex();
       this.simulatorTimes[nextIndex] =
         this.simulatorTimes[currentIndex] + this.settings.dtStep;
 
@@ -389,13 +405,6 @@ class Simulator {
       (timeSinceLastSimulation * this.simulationSpeed) /
       (this.settings.dtStep * 1000);
     this.simulate(iterationsToCalucate);
-
-    const currentIndex = this.getCurrentIndex();
-    console.log(
-      this.iterations,
-      this.neutronPopulations[currentIndex],
-      this.netReactivities[currentIndex]
-    );
 
     this.lastSimulationTime = currentTime;
     requestAnimationFrame(this.run);

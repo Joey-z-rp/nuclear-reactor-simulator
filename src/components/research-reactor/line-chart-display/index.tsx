@@ -20,22 +20,29 @@ export const LineChartDisplay = () => {
     const update = () => {
       const dataPointsLimit = DATA_POINT_PER_SECOND * TIME_RANGE;
       const currentIndex = reactor.getCurrentIndex();
-      if (dataRef.current.lastIndex < currentIndex) {
-        const interval = Math.floor(
-          1000 / reactor.getSettings().dtStep / DATA_POINT_PER_SECOND
-        );
-        for (
-          let i = dataRef.current.lastIndex;
-          i <= currentIndex;
-          i += interval
-        ) {
-          dataRef.current.data.push({
-            time: reactor.getSimulatorTimes()[i],
-            power: reactor.getPower(i),
-            fuelTemperature: reactor.getFuelTemperatures()[i],
-            reactivity: reactor.getReactivities()[i],
-          });
+      if (dataRef.current.lastIndex !== currentIndex) {
+        const addDataPoint = (fromIndex: number, toIndex: number) => {
+          const interval = Math.floor(
+            1000 / reactor.getSettings().dtStep / DATA_POINT_PER_SECOND
+          );
+          for (let i = fromIndex; i <= toIndex; i += interval) {
+            dataRef.current.data.push({
+              time: reactor.getSimulatorTimes()[i],
+              power: reactor.getPower(i),
+              fuelTemperature: reactor.getFuelTemperatures()[i],
+              netReactivity: reactor.getNetReactivities()[i],
+              rawReactivity: reactor.getRawReactivities()[i],
+            });
+          }
+        };
+
+        if (dataRef.current.lastIndex < currentIndex) {
+          addDataPoint(dataRef.current.lastIndex, currentIndex);
+        } else {
+          addDataPoint(dataRef.current.lastIndex, reactor.getDataPoints() - 1);
+          addDataPoint(0, currentIndex);
         }
+
         if (dataRef.current.data.length > dataPointsLimit) {
           dataRef.current.data.splice(
             0,

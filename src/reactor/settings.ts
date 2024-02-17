@@ -31,7 +31,7 @@ export type ControlRodSettings = {
 };
 
 export const simulatorSettings: SimulatorSettings = {
-  dataRetentionTime: 1800, // 30 minutes
+  dataRetentionTime: 300, // second
   dtStep: 0.001, // 1ms
   excessReactivity: 3000, // Core reactivity(pcm) with all rods out,
   ambientTemperature: 22, // The fuel and water temperature before start
