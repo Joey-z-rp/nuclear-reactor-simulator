@@ -10,12 +10,16 @@ export const LineChartDisplay = () => {
     lastIndex: 0,
     data: [],
   });
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const container = document.getElementById(chartContainerId);
-    if (container?.childElementCount) return;
+    if (container?.childElementCount || !containerRef.current) return;
 
-    const { width, height, chart } = initChart();
+    const { width, height, chart } = initChart({
+      containerWidth: containerRef.current.offsetWidth,
+      containerHeight: containerRef.current.offsetHeight,
+    });
 
     const update = () => {
       const dataPointsLimit = DATA_POINT_PER_SECOND * TIME_RANGE;
@@ -60,7 +64,7 @@ export const LineChartDisplay = () => {
   }, []);
 
   return (
-    <div className="h-full">
+    <div className="h-full" ref={containerRef}>
       <div id={chartContainerId} />
     </div>
   );

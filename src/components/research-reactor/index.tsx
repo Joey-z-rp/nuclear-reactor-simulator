@@ -5,7 +5,7 @@ import { LineChartDisplay } from "./line-chart-display";
 export const ResearchReactor = () => {
   return (
     <div>
-      <div className="p-10">
+      <div className="p-10 h-96">
         <LineChartDisplay />
       </div>
       <button

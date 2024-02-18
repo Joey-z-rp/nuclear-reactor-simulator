@@ -86,44 +86,46 @@ export const updateChart = ({
       )
     );
 
-  chart
-    .select(`#${xAxisId}`)
-    .attr("transform", `translate(0,${height})`)
-    .call(
-      axisBottom(xScale)
-        .tickFormat((time) => formatSeconds(time as number))
-        .tickValues(xScale.ticks(4)) as unknown as (
-        selection: Selection<BaseType, unknown, HTMLElement, any>
-      ) => void
-    );
-  chart
-    .select(`#${yTemperatureAxisId}`)
-    .call(
-      axisLeft(yTemperatureScale) as unknown as (
-        selection: Selection<BaseType, unknown, HTMLElement, any>
-      ) => void
-    );
-  chart
-    .select(`#${yPowerAxisId}`)
-    .attr("transform", `translate(${width},0)`)
-    .call(
-      axisRight(yPowerScale).tickFormat((power) =>
-        String(getPowerWithUnit(power as number, nextOrderOfMagnitude).power)
-      ) as unknown as (
-        selection: Selection<BaseType, unknown, HTMLElement, any>
-      ) => void
-    );
-  chart
-    .select(`#${powerLabelId}`)
-    .text(`Power(${getPowerWithUnit(0, nextOrderOfMagnitude).unit})`);
-  chart
-    .select(`#${yReactivityAxisId}`)
-    .attr("transform", `translate(${width + yReactivityAxisOffset},0)`)
-    .call(
-      axisRight(yReactivityScale) as unknown as (
-        selection: Selection<BaseType, unknown, HTMLElement, any>
-      ) => void
-    );
+  const updateAxes = () => {
+    chart
+      .select(`#${xAxisId}`)
+      .attr("transform", `translate(0,${height})`)
+      .call(
+        axisBottom(xScale)
+          .tickFormat((time) => formatSeconds(time as number))
+          .tickValues(xScale.ticks(4)) as unknown as (
+          selection: Selection<BaseType, unknown, HTMLElement, any>
+        ) => void
+      );
+    chart
+      .select(`#${yTemperatureAxisId}`)
+      .call(
+        axisLeft(yTemperatureScale) as unknown as (
+          selection: Selection<BaseType, unknown, HTMLElement, any>
+        ) => void
+      );
+    chart
+      .select(`#${yPowerAxisId}`)
+      .attr("transform", `translate(${width},0)`)
+      .call(
+        axisRight(yPowerScale).tickFormat((power) =>
+          String(getPowerWithUnit(power as number, nextOrderOfMagnitude).power)
+        ) as unknown as (
+          selection: Selection<BaseType, unknown, HTMLElement, any>
+        ) => void
+      );
+    chart
+      .select(`#${powerLabelId}`)
+      .text(`Power(${getPowerWithUnit(0, nextOrderOfMagnitude).unit})`);
+    chart
+      .select(`#${yReactivityAxisId}`)
+      .attr("transform", `translate(${width + yReactivityAxisOffset},0)`)
+      .call(
+        axisRight(yReactivityScale) as unknown as (
+          selection: Selection<BaseType, unknown, HTMLElement, any>
+        ) => void
+      );
+  };
 
   const updatePath = (id: string, line: Line<DataPoint>) => {
     const updatedPath = select(`#${id}`).datum(data).attr("d", line);
@@ -134,19 +136,6 @@ export const updateChart = ({
       .attr("stroke-dasharray", pathLength)
       .attr("stroke-dashoffset", 0);
   };
-  updatePath(
-    fuelTemperaturePathId,
-    fuelTemperatureLine as unknown as Line<DataPoint>
-  );
-  updatePath(powerPathId, powerLine as unknown as Line<DataPoint>);
-  updatePath(
-    rawReactivityPathId,
-    rawReactivityLine as unknown as Line<DataPoint>
-  );
-  updatePath(
-    netReactivityPathId,
-    netReactivityLine as unknown as Line<DataPoint>
-  );
 
   const updateReactivityMarker = (
     markerId: string,
@@ -164,6 +153,23 @@ export const updateChart = ({
       .attr("stroke", markerColor)
       .attr("stroke-width", 4);
   };
+
+  updateAxes();
+
+  updatePath(
+    fuelTemperaturePathId,
+    fuelTemperatureLine as unknown as Line<DataPoint>
+  );
+  updatePath(powerPathId, powerLine as unknown as Line<DataPoint>);
+  updatePath(
+    rawReactivityPathId,
+    rawReactivityLine as unknown as Line<DataPoint>
+  );
+  updatePath(
+    netReactivityPathId,
+    netReactivityLine as unknown as Line<DataPoint>
+  );
+
   updateReactivityMarker(
     rawReactivityMarkerId,
     rawReactivityColor,
@@ -176,11 +182,17 @@ export const updateChart = ({
   );
 };
 
-export const initChart = () => {
+export const initChart = ({
+  containerWidth,
+  containerHeight,
+}: {
+  containerWidth: number;
+  containerHeight: number;
+}) => {
   const svg = select(`#${chartContainerId}`)
     .append("svg")
-    .attr("height", 300)
-    .attr("width", 600);
+    .attr("height", containerHeight)
+    .attr("width", containerWidth);
   const margin = { top: 20, bottom: 40, left: 45, right: 120 };
   const chart = svg
     .append("g")
@@ -191,43 +203,37 @@ export const initChart = () => {
     .append("g")
     .attr("transform", `translate(-${margin.left},0)`);
 
-  // Add labels
-  chart
-    .append("text")
-    .attr("x", width / 2)
-    .attr("y", height + 30)
-    .style("text-anchor", "middle")
-    .style("font-size", "12px")
-    .text("Simulation time");
-  chart
-    .append("text")
-    .attr("transform", "rotate(-90)")
-    .attr("x", -height / 2)
-    .attr("y", -margin.left)
-    .attr("dy", "1em")
-    .style("text-anchor", "middle")
-    .style("font-size", "12px")
-    .text("Temperature(°C)");
-  chart
-    .append("text")
-    .attr("id", powerLabelId)
-    .attr("x", width - 40)
-    .attr("y", -10)
-    .style("font-size", "12px")
-    .text("Power(mW)");
-
-  chart
-    .append("text")
-    .attr("x", width + 30)
-    .attr("y", -10)
-    .style("font-size", "12px")
-    .text("Reactivity(pcm)");
-
-  // Add empty scales group for the scales to be attatched to on update
-  chart.append("g").attr("id", xAxisId);
-  chart.append("g").attr("id", yTemperatureAxisId);
-  chart.append("g").attr("id", yPowerAxisId);
-  chart.append("g").attr("id", yReactivityAxisId);
+  const addLabels = () => {
+    chart
+      .append("text")
+      .attr("x", width / 2)
+      .attr("y", height + 30)
+      .style("text-anchor", "middle")
+      .style("font-size", "12px")
+      .text("Simulation time");
+    chart
+      .append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("x", -height / 2)
+      .attr("y", -margin.left)
+      .attr("dy", "1em")
+      .style("text-anchor", "middle")
+      .style("font-size", "12px")
+      .text("Temperature(°C)");
+    chart
+      .append("text")
+      .attr("id", powerLabelId)
+      .attr("x", width - 40)
+      .attr("y", -10)
+      .style("font-size", "12px")
+      .text("Power(mW)");
+    chart
+      .append("text")
+      .attr("x", width + 30)
+      .attr("y", -10)
+      .style("font-size", "12px")
+      .text("Reactivity(pcm)");
+  };
 
   const addPath = (id: string, color: string) => {
     group
@@ -240,10 +246,19 @@ export const initChart = () => {
       .attr("stroke-linecap", "round")
       .attr("stroke-width", 1.5);
   };
+
+  // Add empty scales group for the scales to be attatched to on update
+  chart.append("g").attr("id", xAxisId);
+  chart.append("g").attr("id", yTemperatureAxisId);
+  chart.append("g").attr("id", yPowerAxisId);
+  chart.append("g").attr("id", yReactivityAxisId);
+
   addPath(fuelTemperaturePathId, fuelTemperatureColor);
   addPath(powerPathId, powerColor);
   addPath(rawReactivityPathId, rawReactivityColor);
   addPath(netReactivityPathId, netReactivityColor);
+
+  addLabels();
 
   return { width, height, chart };
 };
