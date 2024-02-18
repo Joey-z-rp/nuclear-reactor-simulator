@@ -1,3 +1,5 @@
+import { getNextOrder, getPowerWithUnit } from "@/utils/power";
+import { formatSeconds } from "@/utils/time";
 import {
   axisBottom,
   axisLeft,
@@ -23,12 +25,13 @@ const netReactivityPathId = "net-reactivity-path";
 const rawReactivityPathId = "raw-reactivity-path";
 const netReactivityMarkerId = "net-reactivity-marker";
 const rawReactivityMarkerId = "raw-reactivity-marker";
+const powerLabelId = "power-lable";
 const fuelTemperatureColor = "green";
 const powerColor = "red";
 const rawReactivityColor = "gray";
 const netReactivityColor = "blue";
 
-const yReactivityAxisOffset = 50;
+const yReactivityAxisOffset = 40;
 
 export type DataPoint = {
   time: number;
@@ -51,9 +54,8 @@ export const updateChart = ({
 }) => {
   const yTemperatureScale = scaleLinear().range([height, 0]).domain([0, 350]);
   const maxPower = max(data, (dataPoint) => dataPoint.power)!;
-  const yPowerScale = scaleLinear()
-    .range([height, 0])
-    .domain([0, Math.pow(10, Math.floor(Math.log10(maxPower)) + 1)]);
+  const { nextOrder, nextOrderOfMagnitude } = getNextOrder(maxPower);
+  const yPowerScale = scaleLinear().range([height, 0]).domain([0, nextOrder]);
   const yReactivityScale = scaleLinear()
     .range([height, 0])
     .domain([-1000, 1000]);
@@ -88,7 +90,9 @@ export const updateChart = ({
     .select(`#${xAxisId}`)
     .attr("transform", `translate(0,${height})`)
     .call(
-      axisBottom(xScale) as unknown as (
+      axisBottom(xScale)
+        .tickFormat((time) => formatSeconds(time as number))
+        .tickValues(xScale.ticks(4)) as unknown as (
         selection: Selection<BaseType, unknown, HTMLElement, any>
       ) => void
     );
@@ -103,10 +107,15 @@ export const updateChart = ({
     .select(`#${yPowerAxisId}`)
     .attr("transform", `translate(${width},0)`)
     .call(
-      axisRight(yPowerScale) as unknown as (
+      axisRight(yPowerScale).tickFormat((power) =>
+        String(getPowerWithUnit(power as number, nextOrderOfMagnitude).power)
+      ) as unknown as (
         selection: Selection<BaseType, unknown, HTMLElement, any>
       ) => void
     );
+  chart
+    .select(`#${powerLabelId}`)
+    .text(`Power(${getPowerWithUnit(0, nextOrderOfMagnitude).unit})`);
   chart
     .select(`#${yReactivityAxisId}`)
     .attr("transform", `translate(${width + yReactivityAxisOffset},0)`)
@@ -150,20 +159,20 @@ export const updateChart = ({
       .attr("id", markerId)
       .attr("x1", width + yReactivityAxisOffset)
       .attr("y1", yReactivityScale(value))
-      .attr("x2", width + yReactivityAxisOffset + 10)
+      .attr("x2", width + yReactivityAxisOffset + 7)
       .attr("y2", yReactivityScale(value))
       .attr("stroke", markerColor)
-      .attr("stroke-width", 2);
+      .attr("stroke-width", 4);
   };
-  updateReactivityMarker(
-    netReactivityMarkerId,
-    netReactivityColor,
-    data[data.length - 1].netReactivity
-  );
   updateReactivityMarker(
     rawReactivityMarkerId,
     rawReactivityColor,
     data[data.length - 1].rawReactivity
+  );
+  updateReactivityMarker(
+    netReactivityMarkerId,
+    netReactivityColor,
+    data[data.length - 1].netReactivity
   );
 };
 
@@ -172,7 +181,7 @@ export const initChart = () => {
     .append("svg")
     .attr("height", 300)
     .attr("width", 600);
-  const margin = { top: 20, bottom: 20, left: 30, right: 100 };
+  const margin = { top: 20, bottom: 40, left: 45, right: 120 };
   const chart = svg
     .append("g")
     .attr("transform", `translate(${margin.left}, ${margin.top})`);
@@ -181,6 +190,38 @@ export const initChart = () => {
   const group = chart
     .append("g")
     .attr("transform", `translate(-${margin.left},0)`);
+
+  // Add labels
+  chart
+    .append("text")
+    .attr("x", width / 2)
+    .attr("y", height + 30)
+    .style("text-anchor", "middle")
+    .style("font-size", "12px")
+    .text("Simulation time");
+  chart
+    .append("text")
+    .attr("transform", "rotate(-90)")
+    .attr("x", -height / 2)
+    .attr("y", -margin.left)
+    .attr("dy", "1em")
+    .style("text-anchor", "middle")
+    .style("font-size", "12px")
+    .text("Temperature(°C)");
+  chart
+    .append("text")
+    .attr("id", powerLabelId)
+    .attr("x", width - 40)
+    .attr("y", -10)
+    .style("font-size", "12px")
+    .text("Power(mW)");
+
+  chart
+    .append("text")
+    .attr("x", width + 30)
+    .attr("y", -10)
+    .style("font-size", "12px")
+    .text("Reactivity(pcm)");
 
   // Add empty scales group for the scales to be attatched to on update
   chart.append("g").attr("id", xAxisId);
