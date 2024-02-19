@@ -1,10 +1,12 @@
 import { ControlRodSettings } from "../settings";
 
-const CONTROL_ROD_STEPS = 1000;
+export const CONTROL_ROD_STEPS = 1000;
 const CONTROL_ROD_WORTH = 4000; // 4000pcm
 const CONTROL_ROD_SPEED = 15; // 15 steps per second
 
 export class ControlRod {
+  private name: string;
+
   private settings: ControlRodSettings;
 
   private totalSteps: number;
@@ -22,7 +24,8 @@ export class ControlRod {
   // 0 < targetStep < steps
   private targetStep: number;
 
-  constructor(settings: ControlRodSettings) {
+  constructor(name: string, settings: ControlRodSettings) {
+    this.name = name;
     this.settings = settings;
     this.totalSteps = CONTROL_ROD_STEPS;
     this.worth = CONTROL_ROD_WORTH;
@@ -30,6 +33,18 @@ export class ControlRod {
     this.position = 0;
     this.currentStep = 0;
     this.targetStep = 0;
+  }
+
+  getName() {
+    return this.name;
+  }
+
+  getCurrentStep() {
+    return this.currentStep;
+  }
+
+  getTargetStep() {
+    return this.targetStep;
   }
 
   getReactivity() {

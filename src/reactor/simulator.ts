@@ -111,6 +111,10 @@ class Simulator {
     );
   }
 
+  getRodPositions() {
+    return this.rodController.getRodPositions();
+  }
+
   init() {
     this.simulatorTimes[0] = 0;
     this.rawReactivities[0] = this.getRawReactivity();

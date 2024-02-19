@@ -8,10 +8,26 @@ export class RodController {
   private rods: ControlRod[];
 
   constructor(settings: ControlRodSettings) {
-    this.safetyRod = new ControlRod(settings);
-    this.regulatoryRod = new ControlRod(settings);
-    this.shimRod = new ControlRod(settings);
+    this.safetyRod = new ControlRod("safety", settings);
+    this.regulatoryRod = new ControlRod("regulatory", settings);
+    this.shimRod = new ControlRod("shim", settings);
     this.rods = [this.safetyRod, this.regulatoryRod, this.shimRod];
+  }
+
+  getRodPositions(): Record<
+    string,
+    { currentStep: number; targetStep: number }
+  > {
+    return this.rods.reduce(
+      (positions, rod) => ({
+        ...positions,
+        [rod.getName()]: {
+          currentStep: rod.getCurrentStep(),
+          targetStep: rod.getTargetStep(),
+        },
+      }),
+      {}
+    );
   }
 
   getTotalRodReactivity() {

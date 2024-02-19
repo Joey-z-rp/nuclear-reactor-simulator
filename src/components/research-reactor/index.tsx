@@ -1,6 +1,7 @@
 "use client";
 import { reactor } from "@/reactor/simulator";
 import { LineChartDisplay } from "./line-chart-display";
+import { RodController } from "./rod-controller";
 
 export const ResearchReactor = () => {
   return (
@@ -25,6 +26,7 @@ export const ResearchReactor = () => {
       >
         pull
       </button>
+      <RodController />
     </div>
   );
 };
