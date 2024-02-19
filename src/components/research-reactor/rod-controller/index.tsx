@@ -22,7 +22,7 @@ export const RodController = () => {
   useUpdate({
     initialData: controllerRodPositions,
     setData: setControlRodPositions,
-    getData: () => reactor.getRodPositions(),
+    getData: () => reactor.getRodPositions() as RodPositions,
     checkIsChanged: (oldData, newData) =>
       controlRodNames.some(
         (name) =>
@@ -32,7 +32,7 @@ export const RodController = () => {
   });
 
   return (
-    <div className="p-10 flex gap-4">
+    <div className="p-5 flex gap-5">
       <ControlRod
         name="Safety"
         currentStep={controllerRodPositions.safety.currentStep}

@@ -1,3 +1,5 @@
+import { round } from "./number";
+
 export const getNextOrder = (power: number) => {
   const nextOrderOfMagnitude = Math.floor(Math.log10(power)) + 1;
   return {
@@ -11,14 +13,14 @@ export const getPowerWithUnit = (
   nextOrderOfMagnitude: number
 ) => {
   if (nextOrderOfMagnitude < -2) {
-    return { power: power * 1000000, unit: "µW" };
+    return { power: round(power * 1000000), unit: "µW" };
   } else if (nextOrderOfMagnitude < 1) {
-    return { power: power * 1000, unit: "mW" };
+    return { power: round(power * 1000), unit: "mW" };
   } else if (nextOrderOfMagnitude < 4) {
-    return { power, unit: "W" };
+    return { power: round(power), unit: "W" };
   } else if (nextOrderOfMagnitude < 7) {
-    return { power: power / 1000, unit: "kW" };
+    return { power: round(power / 1000), unit: "kW" };
   } else {
-    return { power: power / 1000000, unit: "MW" };
+    return { power: round(power / 1000000), unit: "MW" };
   }
 };
