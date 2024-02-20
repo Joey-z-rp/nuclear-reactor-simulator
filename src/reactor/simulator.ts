@@ -46,6 +46,9 @@ class Simulator {
 
   private rodController: RodController;
 
+  // The number of iteration where the neutron population decreases or increases
+  private turningPoint: number;
+
   constructor(settings: SimulatorSettings) {
     this.dataPoints = Math.floor(settings.dataRetentionTime / settings.dtStep);
     this.settings = settings;
@@ -54,6 +57,7 @@ class Simulator {
     this.iterations = 0;
     this.xenonConcentration = 0;
     this.iodineConcentration = 0;
+    this.turningPoint = 0;
     this.waterTemperature = this.settings.ambientTemperature;
     this.simulatorTimes = Array(this.dataPoints);
     this.rawReactivities = Array(this.dataPoints);
@@ -145,6 +149,16 @@ class Simulator {
     return currentIndex === this.dataPoints - 1 ? 0 : currentIndex + 1;
   }
 
+  shiftIndex(index: number, shift: number) {
+    if (shift + index >= this.dataPoints) {
+      return (shift + index) % this.dataPoints;
+    } else if (shift + index < 0) {
+      return this.dataPoints + shift + index;
+    } else {
+      return shift + index;
+    }
+  }
+
   getPower(index: number) {
     const neutronPopulation = this.neutronPopulations[index];
     return (
@@ -193,6 +207,37 @@ class Simulator {
         this.settings.thermalNeutronSpeed) /
       this.settings.coreVolume
     );
+  }
+
+  getReactorPeriod() {
+    const currentIndex = this.getCurrentIndex();
+    const defaultNumOfDataPoints = 700;
+    const periodK = 0.95;
+    const numOfDataPointsToUse = Math.min(
+      this.iterations - this.turningPoint - 1,
+      defaultNumOfDataPoints
+    );
+    if (numOfDataPointsToUse > 1) {
+      const periodSum =
+        (1 - Math.pow(periodK, numOfDataPointsToUse - 2)) / (1 - periodK);
+      const neutronPopulations = Array(numOfDataPointsToUse);
+      let reactorPeriod = 0;
+      for (let i = 0; i < numOfDataPointsToUse; i++)
+        neutronPopulations[i] =
+          this.neutronPopulations[
+            this.shiftIndex(currentIndex, i - numOfDataPointsToUse + 1)
+          ];
+      for (let i = 0; i < numOfDataPointsToUse - 1; i++) {
+        reactorPeriod +=
+          Math.pow(periodK, numOfDataPointsToUse - i - 2) /
+          Math.log(neutronPopulations[i + 1] / neutronPopulations[i]);
+      }
+      const finalPeriod = (reactorPeriod * this.settings.dtStep) / periodSum;
+
+      return finalPeriod > 10000 || finalPeriod < 0 ? Infinity : finalPeriod;
+    } else {
+      return Infinity;
+    }
   }
 
   // This is a very slow process, an Euler scheme is used for time
@@ -319,6 +364,17 @@ class Simulator {
     const [newNeutronPopulation, ...newStateVector] = newState;
     this.neutronPopulations[nextIndex] = Math.max(10, newNeutronPopulation);
     this.stateVectors[nextIndex] = newStateVector;
+
+    // If the trend of neutron population changes
+    if (
+      (this.neutronPopulations[nextIndex] -
+        this.neutronPopulations[currentIndex]) *
+        (this.neutronPopulations[currentIndex] -
+          this.neutronPopulations[this.shiftIndex(currentIndex, -1)]) <
+      0
+    ) {
+      this.turningPoint = this.iterations;
+    }
   }
 
   calculateWaterTemperature(currentIndex: number) {

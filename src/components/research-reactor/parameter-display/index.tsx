@@ -12,6 +12,7 @@ export const ParameterDisplay = () => {
     netReactivity: 0,
     rawReactivity: 0,
     power: 0,
+    reactorPeriod: Infinity,
   });
 
   useUpdate({
@@ -25,6 +26,7 @@ export const ParameterDisplay = () => {
         netReactivity: round(reactor.getNetReactivities()[currentIndex]),
         rawReactivity: round(reactor.getRawReactivities()[currentIndex]),
         power: round(reactor.getPower(currentIndex), 7),
+        reactorPeriod: round(reactor.getReactorPeriod()),
       };
     },
     checkIsChanged: (oldData, newData) =>
@@ -32,7 +34,8 @@ export const ParameterDisplay = () => {
       oldData.waterTemperature !== newData.waterTemperature ||
       oldData.netReactivity !== newData.netReactivity ||
       oldData.rawReactivity !== newData.rawReactivity ||
-      oldData.power !== newData.power,
+      oldData.power !== newData.power ||
+      oldData.reactorPeriod !== newData.reactorPeriod,
   });
 
   const { power, unit } = getPowerWithUnit(
@@ -44,6 +47,11 @@ export const ParameterDisplay = () => {
     <div className="p-5 flex gap-2">
       <div className="flex flex-col gap-2">
         <Parameter name="Power" value={power} unit={unit} color="red" />
+        <Parameter
+          name="Reactor period"
+          value={parameters.reactorPeriod}
+          unit={Number.isFinite(parameters.reactorPeriod) ? "s" : ""}
+        />
         <Parameter
           name="Fuel temperature"
           value={parameters.fuelTemperature}
