@@ -7,7 +7,7 @@ const TIME_RANGE = 30; // second
 
 export const LineChartDisplay = () => {
   const dataRef = useRef<{ lastIndex: number; data: DataPoint[] }>({
-    lastIndex: 0,
+    lastIndex: -1,
     data: [],
   });
   const containerRef = useRef<HTMLDivElement>(null);
@@ -29,7 +29,11 @@ export const LineChartDisplay = () => {
           const interval = Math.floor(
             1000 / reactor.getSettings().dtStep / DATA_POINT_PER_SECOND
           );
-          for (let i = fromIndex; i <= toIndex; i += interval) {
+          for (
+            let i = fromIndex < 0 ? 0 : fromIndex;
+            i <= toIndex;
+            i += interval
+          ) {
             dataRef.current.data.push({
               time: reactor.getSimulatorTimes()[i],
               power: reactor.getPower(i),

@@ -3,6 +3,7 @@ import { reactor } from "@/reactor/simulator";
 import { LineChartDisplay } from "./line-chart-display";
 import { RodController } from "./rod-controller";
 import { ParameterDisplay } from "./parameter-display";
+import { SimulationControl } from "./simulation-control";
 
 export const ResearchReactor = () => {
   return (
@@ -12,7 +13,6 @@ export const ResearchReactor = () => {
       </div>
       <button
         onClick={() => {
-          reactor.init();
           reactor.start();
         }}
       >
@@ -30,6 +30,7 @@ export const ResearchReactor = () => {
       <div className="flex gap-2">
         <ParameterDisplay />
         <RodController />
+        <SimulationControl />
       </div>
     </div>
   );

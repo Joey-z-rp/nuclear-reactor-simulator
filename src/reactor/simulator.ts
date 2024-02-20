@@ -12,7 +12,13 @@ class Simulator {
   // Total iterations since simulation start
   private iterations: number;
 
+  // Whether the simulation is paused
+  private isPaused: boolean;
+
   private simulationSpeed: number;
+
+  // The time when the simulation is paused (real time)
+  private pausedTime: number;
 
   // The last time a simulation calculation was run (real time)
   private lastSimulationTime: number;
@@ -52,7 +58,9 @@ class Simulator {
   constructor(settings: SimulatorSettings) {
     this.dataPoints = Math.floor(settings.dataRetentionTime / settings.dtStep);
     this.settings = settings;
-    this.simulationSpeed = 10;
+    this.isPaused = true;
+    this.simulationSpeed = 1;
+    this.pausedTime = Infinity;
     this.lastSimulationTime = 0;
     this.iterations = 0;
     this.xenonConcentration = 0;
@@ -77,6 +85,14 @@ class Simulator {
     );
 
     this.rodController = new RodController({ dtStep: this.settings.dtStep });
+  }
+
+  getSimulationSpeed() {
+    return this.simulationSpeed;
+  }
+
+  getIsPaused() {
+    return this.isPaused;
   }
 
   getDataPoints() {
@@ -458,8 +474,13 @@ class Simulator {
   }
 
   run = () => {
+    if (this.isPaused) return;
+
     const currentTime = Date.now();
-    const timeSinceLastSimulation = currentTime - this.lastSimulationTime;
+    const hasPausedTime = Number.isFinite(this.pausedTime);
+    const currentTimeToUse = hasPausedTime ? this.pausedTime : currentTime;
+    const timeSinceLastSimulation = currentTimeToUse - this.lastSimulationTime;
+    if (hasPausedTime) this.pausedTime = Infinity;
     // timeSinceLastSimulation is in millisecond and dtStep is in second
     const iterationsToCalucate =
       (timeSinceLastSimulation * this.simulationSpeed) /
@@ -471,13 +492,26 @@ class Simulator {
   };
 
   start() {
-    this.lastSimulationTime = Date.now();
+    if (this.iterations === 1) {
+      this.lastSimulationTime = Date.now();
+    }
+    this.isPaused = false;
     requestAnimationFrame(this.run);
+  }
+
+  pause() {
+    this.isPaused = true;
+    this.pausedTime = Date.now();
   }
 
   setRodTarget(rod: "safety" | "regulatory" | "shim", step: number) {
     this.rodController.setRodTarget(rod, step);
   }
+
+  setSimulationSpeed(speed: number) {
+    this.simulationSpeed = speed;
+  }
 }
 
 export const reactor = new Simulator(simulatorSettings);
+reactor.init();
