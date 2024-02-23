@@ -65,4 +65,8 @@ export class RodController {
       rod.scram();
     });
   }
+
+  fire(targetStep: number) {
+    this.regulatoryRod.fire(targetStep);
+  }
 }

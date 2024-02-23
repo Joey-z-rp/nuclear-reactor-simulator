@@ -9,6 +9,7 @@ const statuses = {
   [ScramStatus.WATER_TEMPERATURE]: "Water temperature too high",
   [ScramStatus.REACTOR_PERIOD]: "Reactor period too low",
   [ScramStatus.USER_INITIATED]: "User initialed",
+  [ScramStatus.AFTER_PULSE]: "Scram after pulse",
 };
 
 export const StatusDisplay = () => {
@@ -30,7 +31,7 @@ export const StatusDisplay = () => {
     status.scramStatus !== null ? "text-red-500" : "text-green-500";
 
   return (
-    <div className="p-2 flex flex-col gap-5 bg-gray-200">
+    <div className="p-2 flex flex-col gap-2 bg-gray-200">
       <div className="flex flex-col text-center gap-2">
         <div>Reactor status:</div>
         <div className={textColor}>
@@ -43,7 +44,7 @@ export const StatusDisplay = () => {
         <button
           className={`text-md text-white ${
             status.scramStatus ? "bg-gray-500" : "bg-red-500"
-          } rounded-md p-3 mr-2`}
+          } rounded-md p-2 mr-2`}
           onClick={() => reactor.scram(ScramStatus.USER_INITIATED)}
           disabled={!!status.scramStatus}
         >

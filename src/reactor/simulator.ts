@@ -58,9 +58,11 @@ class Simulator {
 
   private scramStatus: ScramStatus | null;
 
-  private reactorPeriodTimer: NodeJS.Timeout | null;
+  private lowReactorPeriodTimestamp: number | null;
 
   private isActiveWaterCoolingEnabled: boolean;
+
+  private pulseTimestamp: number | null;
 
   constructor(settings: SimulatorSettings) {
     this.dataPoints = Math.floor(settings.dataRetentionTime / settings.dtStep);
@@ -75,8 +77,9 @@ class Simulator {
     this.turningPoint = 0;
     this.waterTemperature = this.settings.ambientTemperature;
     this.scramStatus = null;
-    this.reactorPeriodTimer = null;
+    this.lowReactorPeriodTimestamp = null;
     this.isActiveWaterCoolingEnabled = true;
+    this.pulseTimestamp = null;
     this.simulatorTimes = Array(this.dataPoints);
     this.rawReactivities = Array(this.dataPoints);
     this.netReactivities = Array(this.dataPoints);
@@ -243,6 +246,31 @@ class Simulator {
     );
   }
 
+  checkReactorPeriodLimit(reactorPeriod: number) {
+    if (this.pulseTimestamp) return;
+
+    // If the period is low than 5s for more than 6s, scram
+    const currentTime = this.simulatorTimes[this.getCurrentIndex()];
+    if (
+      this.lowReactorPeriodTimestamp &&
+      currentTime - this.lowReactorPeriodTimestamp > 6
+    ) {
+      this.scram(ScramStatus.REACTOR_PERIOD);
+      this.lowReactorPeriodTimestamp = null;
+    }
+    if (reactorPeriod > 0 && reactorPeriod < 1) {
+      this.scram(ScramStatus.REACTOR_PERIOD);
+    } else if (
+      reactorPeriod > 0 &&
+      reactorPeriod < 5 &&
+      !this.lowReactorPeriodTimestamp
+    ) {
+      this.lowReactorPeriodTimestamp = currentTime;
+    } else if (reactorPeriod >= 5 && this.lowReactorPeriodTimestamp) {
+      this.lowReactorPeriodTimestamp = null;
+    }
+  }
+
   getReactorPeriod() {
     const currentIndex = this.getCurrentIndex();
     const defaultNumOfDataPoints = 700;
@@ -267,23 +295,7 @@ class Simulator {
           Math.log(neutronPopulations[i + 1] / neutronPopulations[i]);
       }
       const finalPeriod = (reactorPeriod * this.settings.dtStep) / periodSum;
-
-      // If the period is low than 5s for more than 6s, scram
-      if (finalPeriod > 0 && finalPeriod < 1) {
-        this.scram(ScramStatus.REACTOR_PERIOD);
-      } else if (
-        finalPeriod > 0 &&
-        finalPeriod < 5 &&
-        !this.reactorPeriodTimer
-      ) {
-        this.reactorPeriodTimer = setTimeout(
-          () => this.scram(ScramStatus.REACTOR_PERIOD),
-          6000
-        );
-      } else if (finalPeriod >= 5 && this.reactorPeriodTimer) {
-        clearTimeout(this.reactorPeriodTimer);
-        this.reactorPeriodTimer = null;
-      }
+      this.checkReactorPeriodLimit(finalPeriod);
 
       return finalPeriod > 10000 || finalPeriod < 0 ? Infinity : finalPeriod;
     } else {
@@ -462,6 +474,14 @@ class Simulator {
 
   checkOperationLimit() {
     const currentIndex = this.getCurrentIndex();
+
+    if (this.pulseTimestamp) {
+      // Auto scram 6s after pulse
+      if (this.simulatorTimes[currentIndex] - this.pulseTimestamp > 6)
+        this.scram(ScramStatus.AFTER_PULSE);
+      return;
+    }
+
     const currentPower = this.getPower(currentIndex);
     const currentFuelTemperature = this.fuelTemperatures[currentIndex];
 
@@ -575,6 +595,11 @@ class Simulator {
   scram(status: ScramStatus) {
     this.scramStatus = status;
     this.rodController.scram();
+  }
+
+  pulse(targetStep: number) {
+    this.pulseTimestamp = this.simulatorTimes[this.getCurrentIndex()];
+    this.rodController.fire(targetStep);
   }
 }
 

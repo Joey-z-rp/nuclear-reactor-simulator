@@ -4,4 +4,5 @@ export enum ScramStatus {
   WATER_TEMPERATURE,
   REACTOR_PERIOD,
   USER_INITIATED,
+  AFTER_PULSE,
 }

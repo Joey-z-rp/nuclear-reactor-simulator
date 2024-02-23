@@ -44,7 +44,7 @@ export const ParameterDisplay = () => {
   );
 
   return (
-    <div className="p-5 flex gap-2">
+    <div className="p-3 flex gap-2">
       <div className="flex flex-col gap-2">
         <Parameter name="Power" value={power} unit={unit} color="red" />
         <Parameter

@@ -7,26 +7,10 @@ import { SimulationControl } from "./simulation-control";
 
 export const ResearchReactor = () => {
   return (
-    <div>
-      <div className="p-10 h-96">
+    <div className="h-screen">
+      <div className="p-3 h-96">
         <LineChartDisplay />
       </div>
-      <button
-        onClick={() => {
-          reactor.start();
-        }}
-      >
-        start
-      </button>
-      <button
-        onClick={() => {
-          reactor.setRodTarget("safety", 1000);
-          reactor.setRodTarget("shim", 1000);
-          reactor.setRodTarget("regulatory", 300);
-        }}
-      >
-        pull
-      </button>
       <div className="flex gap-2">
         <ParameterDisplay />
         <RodController />

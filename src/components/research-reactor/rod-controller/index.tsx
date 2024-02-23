@@ -32,7 +32,7 @@ export const RodController = () => {
   });
 
   return (
-    <div className="p-5 flex gap-5">
+    <div className="p-3 flex gap-5">
       <ControlRod
         name="Safety"
         currentStep={controllerRodPositions.safety.currentStep}

@@ -46,19 +46,29 @@ export const updateChart = ({
   chart,
   height,
   width,
+  simulationSpeed,
 }: {
   data: DataPoint[];
   chart: Selection<SVGGElement, unknown, HTMLElement, any>;
   height: number;
   width: number;
+  simulationSpeed: number;
 }) => {
-  const yTemperatureScale = scaleLinear().range([height, 0]).domain([0, 350]);
+  const yTemperatureScale = scaleLinear()
+    .range([height, 0])
+    .domain([
+      0,
+      Math.max(350, max(data, (dataPoint) => dataPoint.fuelTemperature)!),
+    ]);
   const maxPower = max(data, (dataPoint) => dataPoint.power)!;
   const { nextOrder, nextOrderOfMagnitude } = getNextOrder(maxPower);
   const yPowerScale = scaleLinear().range([height, 0]).domain([0, nextOrder]);
   const yReactivityScale = scaleLinear()
     .range([height, 0])
-    .domain([-1000, 1000]);
+    .domain([
+      -1000,
+      Math.max(1000, max(data, (dataPoint) => dataPoint.netReactivity)!),
+    ]);
   const xScale = scaleLinear()
     .range([0, width])
     .domain(extent(data, (dataPoint) => dataPoint.time) as number[]);
@@ -92,7 +102,9 @@ export const updateChart = ({
       .attr("transform", `translate(0,${height})`)
       .call(
         axisBottom(xScale)
-          .tickFormat((time) => formatSeconds(time as number))
+          .tickFormat((time) =>
+            formatSeconds(time as number, simulationSpeed < 1)
+          )
           .tickValues(xScale.ticks(4)) as unknown as (
           selection: Selection<BaseType, unknown, HTMLElement, any>
         ) => void

@@ -58,7 +58,13 @@ export const LineChartDisplay = () => {
           );
         }
         dataRef.current.lastIndex = currentIndex;
-        updateChart({ data: dataRef.current.data, width, height, chart });
+        updateChart({
+          data: dataRef.current.data,
+          width,
+          height,
+          chart,
+          simulationSpeed: reactor.getSimulationSpeed(),
+        });
       }
 
       requestAnimationFrame(update);

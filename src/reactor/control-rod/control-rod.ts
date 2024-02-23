@@ -4,6 +4,7 @@ export const CONTROL_ROD_STEPS = 1000;
 const CONTROL_ROD_WORTH = 4000; // 4000pcm
 const CONTROL_ROD_SPEED = 15; // 15 steps per second
 const SCRAM_PERIOD = 6; // Scram in 6s
+const FIRE_ACCELERATION_SPEED = 50;
 
 export class ControlRod {
   private name: string;
@@ -27,6 +28,11 @@ export class ControlRod {
 
   private isScrammed: boolean;
 
+  private isFiring: boolean;
+
+  // The time passed since pulsing started
+  private pulseTime: number;
+
   constructor(name: string, settings: ControlRodSettings) {
     this.name = name;
     this.settings = settings;
@@ -37,6 +43,8 @@ export class ControlRod {
     this.currentStep = 0;
     this.targetStep = 0;
     this.isScrammed = false;
+    this.isFiring = false;
+    this.pulseTime = 0;
   }
 
   getName() {
@@ -63,6 +71,23 @@ export class ControlRod {
   }
 
   move() {
+    if (this.isFiring) {
+      const currentPulseTime = this.pulseTime + this.settings.dtStep;
+      this.pulseTime = currentPulseTime;
+      const nextPosition =
+        Math.pow(currentPulseTime, 2) *
+        FIRE_ACCELERATION_SPEED *
+        0.5 *
+        CONTROL_ROD_STEPS;
+      this.currentStep = Math.floor(nextPosition);
+      if (nextPosition >= this.targetStep) {
+        this.position = this.targetStep;
+        this.isFiring = false;
+      } else {
+        this.position = nextPosition;
+      }
+      return;
+    }
     if (this.currentStep === this.targetStep) return;
     if (this.currentStep < this.targetStep) {
       const nextPosition = this.position + this.speed * this.settings.dtStep;
@@ -78,7 +103,7 @@ export class ControlRod {
   }
 
   setTarget(step: number) {
-    if (!this.isScrammed) this.targetStep = step;
+    if (!this.isScrammed && !this.isFiring) this.targetStep = step;
   }
 
   scram() {
@@ -86,5 +111,11 @@ export class ControlRod {
     this.isScrammed = true;
     this.speed = Math.ceil(CONTROL_ROD_STEPS / SCRAM_PERIOD);
     this.targetStep = 0;
+  }
+
+  fire(targetStep: number) {
+    this.targetStep = targetStep;
+    this.pulseTime = 0;
+    this.isFiring = true;
   }
 }
