@@ -59,4 +59,10 @@ export class RodController {
         return;
     }
   }
+
+  scram() {
+    this.rods.forEach((rod) => {
+      rod.scram();
+    });
+  }
 }

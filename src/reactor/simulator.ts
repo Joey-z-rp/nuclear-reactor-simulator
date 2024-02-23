@@ -2,6 +2,7 @@ import { addArrays, multiplyArray } from "@/utils/array";
 import { pi } from "./constants";
 import { RodController } from "./control-rod/rod-controller";
 import { SimulatorSettings, simulatorSettings } from "./settings";
+import { ScramStatus } from "./types";
 
 class Simulator {
   private settings: SimulatorSettings;
@@ -55,6 +56,12 @@ class Simulator {
   // The number of iteration where the neutron population decreases or increases
   private turningPoint: number;
 
+  private scramStatus: ScramStatus | null;
+
+  private reactorPeriodTimer: NodeJS.Timeout | null;
+
+  private isActiveWaterCoolingEnabled: boolean;
+
   constructor(settings: SimulatorSettings) {
     this.dataPoints = Math.floor(settings.dataRetentionTime / settings.dtStep);
     this.settings = settings;
@@ -67,6 +74,9 @@ class Simulator {
     this.iodineConcentration = 0;
     this.turningPoint = 0;
     this.waterTemperature = this.settings.ambientTemperature;
+    this.scramStatus = null;
+    this.reactorPeriodTimer = null;
+    this.isActiveWaterCoolingEnabled = true;
     this.simulatorTimes = Array(this.dataPoints);
     this.rawReactivities = Array(this.dataPoints);
     this.netReactivities = Array(this.dataPoints);
@@ -133,6 +143,14 @@ class Simulator {
 
   getRodPositions() {
     return this.rodController.getRodPositions();
+  }
+
+  getScramStatus() {
+    return this.scramStatus;
+  }
+
+  getIsActiveWaterCoolingEnabled() {
+    return this.isActiveWaterCoolingEnabled;
   }
 
   init() {
@@ -249,6 +267,23 @@ class Simulator {
           Math.log(neutronPopulations[i + 1] / neutronPopulations[i]);
       }
       const finalPeriod = (reactorPeriod * this.settings.dtStep) / periodSum;
+
+      // If the period is low than 5s for more than 6s, scram
+      if (finalPeriod > 0 && finalPeriod < 1) {
+        this.scram(ScramStatus.REACTOR_PERIOD);
+      } else if (
+        finalPeriod > 0 &&
+        finalPeriod < 5 &&
+        !this.reactorPeriodTimer
+      ) {
+        this.reactorPeriodTimer = setTimeout(
+          () => this.scram(ScramStatus.REACTOR_PERIOD),
+          6000
+        );
+      } else if (finalPeriod >= 5 && this.reactorPeriodTimer) {
+        clearTimeout(this.reactorPeriodTimer);
+        this.reactorPeriodTimer = null;
+      }
 
       return finalPeriod > 10000 || finalPeriod < 0 ? Infinity : finalPeriod;
     } else {
@@ -402,12 +437,17 @@ class Simulator {
     // From Žerovnik power calibration
     const qAir =
       13.6 *
-      Math.pow(this.settings.ambientTemperature - this.waterTemperature, 4 / 3);
+      Math.pow(
+        Math.abs(this.settings.ambientTemperature - this.waterTemperature),
+        4 / 3
+      );
     const qConcrete =
-      250 * (this.settings.ambientTemperature - this.waterTemperature);
+      250 * Math.abs(this.settings.ambientTemperature - this.waterTemperature);
     const tPassiveCooling = (qAir + qConcrete) / waterCapacity;
     // dT = (T-air_temp) * const. * dt
-    const tActiveCooling = this.settings.waterCoolingPower / waterCapacity; // dT = P*dt / C_vode
+    const tActiveCooling = this.isActiveWaterCoolingEnabled
+      ? this.settings.waterCoolingPower / waterCapacity
+      : 0; // dT = P*dt / C_vode
     const newWaterTemperature =
       this.waterTemperature +
       this.settings.dtStep * (tFuel - tPassiveCooling - tActiveCooling);
@@ -417,6 +457,20 @@ class Simulator {
       this.waterTemperature = 100;
     } else {
       this.waterTemperature = newWaterTemperature;
+    }
+  }
+
+  checkOperationLimit() {
+    const currentIndex = this.getCurrentIndex();
+    const currentPower = this.getPower(currentIndex);
+    const currentFuelTemperature = this.fuelTemperatures[currentIndex];
+
+    if (currentPower > this.settings.powerLimit) {
+      this.scram(ScramStatus.POWER);
+    } else if (currentFuelTemperature > this.settings.fuelTemperatureLimit) {
+      this.scram(ScramStatus.FUEL_TEMPERATURE);
+    } else if (this.waterTemperature > this.settings.waterTemperatureLimit) {
+      this.scram(ScramStatus.WATER_TEMPERATURE);
     }
   }
 
@@ -470,6 +524,8 @@ class Simulator {
       this.calculateWaterTemperature(currentIndex);
 
       this.iterations++;
+
+      this.checkOperationLimit();
     }
   }
 
@@ -510,6 +566,15 @@ class Simulator {
 
   setSimulationSpeed(speed: number) {
     this.simulationSpeed = speed;
+  }
+
+  setIsActiveWaterCoolingEnabled(isEnabled: boolean) {
+    this.isActiveWaterCoolingEnabled = isEnabled;
+  }
+
+  scram(status: ScramStatus) {
+    this.scramStatus = status;
+    this.rodController.scram();
   }
 }
 

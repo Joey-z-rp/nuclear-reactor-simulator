@@ -3,6 +3,7 @@ import { ControlRodSettings } from "../settings";
 export const CONTROL_ROD_STEPS = 1000;
 const CONTROL_ROD_WORTH = 4000; // 4000pcm
 const CONTROL_ROD_SPEED = 15; // 15 steps per second
+const SCRAM_PERIOD = 6; // Scram in 6s
 
 export class ControlRod {
   private name: string;
@@ -24,6 +25,8 @@ export class ControlRod {
   // 0 < targetStep < steps
   private targetStep: number;
 
+  private isScrammed: boolean;
+
   constructor(name: string, settings: ControlRodSettings) {
     this.name = name;
     this.settings = settings;
@@ -33,6 +36,7 @@ export class ControlRod {
     this.position = 0;
     this.currentStep = 0;
     this.targetStep = 0;
+    this.isScrammed = false;
   }
 
   getName() {
@@ -74,6 +78,13 @@ export class ControlRod {
   }
 
   setTarget(step: number) {
-    this.targetStep = step;
+    if (!this.isScrammed) this.targetStep = step;
+  }
+
+  scram() {
+    if (this.isScrammed) return;
+    this.isScrammed = true;
+    this.speed = Math.ceil(CONTROL_ROD_STEPS / SCRAM_PERIOD);
+    this.targetStep = 0;
   }
 }

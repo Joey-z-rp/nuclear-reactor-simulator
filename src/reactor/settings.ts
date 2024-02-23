@@ -24,6 +24,9 @@ export type SimulatorSettings = {
   waterVolume: number;
   waterSpecificHeat: number;
   waterCoolingPower: number;
+  powerLimit: number;
+  fuelTemperatureLimit: number;
+  waterTemperatureLimit: number;
 };
 
 export type ControlRodSettings = {
@@ -58,4 +61,7 @@ export const simulatorSettings: SimulatorSettings = {
   waterVolume: 20, // Reactor primary water volume (in cubic meters)
   waterSpecificHeat: 4185.5, // J/kgK
   waterCoolingPower: 2.4e5,
+  powerLimit: 1000000, // 1MW
+  fuelTemperatureLimit: 300, // celsius
+  waterTemperatureLimit: 80, // celsius
 };
