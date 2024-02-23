@@ -24,7 +24,10 @@ export const LineChartDisplay = () => {
     const update = () => {
       const dataPointsLimit = DATA_POINT_PER_SECOND * TIME_RANGE;
       const currentIndex = reactor.getCurrentIndex();
-      if (dataRef.current.lastIndex !== currentIndex) {
+      if (
+        (!reactor.getIsPaused() || dataRef.current.lastIndex === -1) &&
+        dataRef.current.lastIndex !== currentIndex
+      ) {
         const addDataPoint = (fromIndex: number, toIndex: number) => {
           const interval = Math.floor(
             1000 / reactor.getSettings().dtStep / DATA_POINT_PER_SECOND

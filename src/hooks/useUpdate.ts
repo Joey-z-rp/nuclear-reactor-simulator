@@ -1,5 +1,6 @@
 import { useRef } from "react";
 import { useMount } from "./useMount";
+import { reactor } from "@/reactor/simulator";
 
 type UseUpdate<D extends any> = {
   initialData: D;
@@ -18,11 +19,13 @@ export const useUpdate = <D>({
 
   useMount(() => {
     const update = () => {
-      const data = getData();
-      const isChanged = checkIsChanged(dataRef.current, data);
-      if (isChanged) {
-        dataRef.current = data;
-        setData(data);
+      if (!reactor.getIsPaused()) {
+        const data = getData();
+        const isChanged = checkIsChanged(dataRef.current, data);
+        if (isChanged) {
+          dataRef.current = data;
+          setData(data);
+        }
       }
 
       requestAnimationFrame(update);

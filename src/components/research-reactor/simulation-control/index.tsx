@@ -10,8 +10,8 @@ const simulationSpeeds = [
 ];
 
 export const SimulationControl = () => {
+  const [isPaused, setIsPaused] = useState(true);
   const [simulationStatus, setSimulationStatus] = useState({
-    isPaused: true,
     simulationSpeed: 1,
     isActiveWaterCoolingEnabled: true,
   });
@@ -19,23 +19,23 @@ export const SimulationControl = () => {
   useUpdate({
     initialData: simulationStatus,
     getData: () => ({
-      isPaused: reactor.getIsPaused(),
       simulationSpeed: reactor.getSimulationSpeed(),
       isActiveWaterCoolingEnabled: reactor.getIsActiveWaterCoolingEnabled(),
     }),
     setData: setSimulationStatus,
     checkIsChanged: (oldData, newData) =>
-      oldData.isPaused !== newData.isPaused ||
       oldData.simulationSpeed !== newData.simulationSpeed ||
       oldData.isActiveWaterCoolingEnabled !==
         newData.isActiveWaterCoolingEnabled,
   });
 
   const togglePaused = () => {
-    if (simulationStatus.isPaused) {
+    if (reactor.getIsPaused()) {
       reactor.start();
+      setIsPaused(false);
     } else {
       reactor.pause();
+      setIsPaused(true);
     }
   };
 
@@ -51,12 +51,18 @@ export const SimulationControl = () => {
   return (
     <div className="p-2">
       <div className="bg-gray-300 p-3 rounded-sm mb-2 flex flex-col gap-3">
-        <div>
+        <div className="flex justify-between">
           <button
             className="text-sm text-white bg-blue-500 rounded-md p-3 min-w-16"
             onClick={togglePaused}
           >
-            {simulationStatus.isPaused ? "Start" : "Pause"}
+            {isPaused ? "Start" : "Pause"}
+          </button>
+          <button
+            className="text-sm text-white bg-blue-500 rounded-md p-3 min-w-16"
+            onClick={() => location?.reload()}
+          >
+            Reset
           </button>
         </div>
         <div className="flex">
