@@ -297,7 +297,7 @@ class Simulator {
       const finalPeriod = (reactorPeriod * this.settings.dtStep) / periodSum;
       this.checkReactorPeriodLimit(finalPeriod);
 
-      return finalPeriod > 10000 || finalPeriod < 0 ? Infinity : finalPeriod;
+      return finalPeriod > 10000 || finalPeriod < -10000 ? Infinity : finalPeriod;
     } else {
       return Infinity;
     }
